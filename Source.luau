@@ -472,7 +472,7 @@ function BitBuffer:Deserialize()
 	local Position = -1
 	local Size = self.Size
 	local Buffer = self.Buffer
-	while Position <= Size do
+	while Position < Size - 1 do
 		Position += 1
 		local Type = buffer_readu8(Buffer, Position)
 		if Type == 0 then

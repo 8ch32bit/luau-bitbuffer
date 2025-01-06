@@ -102,10 +102,7 @@ function BitBuffer.fromBuffer(Buffer: buffer)
 end
 
 function BitBuffer.fromString(String: String)
-	local self = setmetatable({}, BitBuffer)
-	self.Buffer = buffer_fromstring(String)
-	self.Size = buffer_len(self.Buffer)
-	return self
+	return BitBuffer.fromBuffer(buffer_fromstring(String))
 end
 
 --// object functions
@@ -119,11 +116,6 @@ end
 function BitBuffer:Destroy()
 	table_clear(self)
 	setmetatable(self, nil)
-end
-
-function BitBuffer:Clear()
-	self.Size = 0
-	self.Buffer = buffer_create(65536)
 end
 
 function BitBuffer:GetBuffer()
@@ -466,8 +458,9 @@ function BitBuffer:Serialize(Data: { any })
 	end
 end
 
---// TODO: Deserializes every value in the bitbuffer
+--// TODO: Deserializes every value in the bitbuffer and returns the calculated size of all items, and the items
 function BitBuffer:Deserialize()
+	local CalculatedSize = 0
 	local Data = {}
 	local Position = -1
 	local Size = self.Size
@@ -482,6 +475,7 @@ function BitBuffer:Deserialize()
 		Type = ReverseSignatures[Type]
 		if Type then
 			local Value, Offset = self[`Read{string.upper(string.sub(Type, 1, 1))}{string.sub(Type, 2, #Type)}`](self, Position + 1)
+			CalculatedSize += Offset + 1
 			Position += Offset
 			table_insert(Data, Value)
 		else
@@ -489,11 +483,11 @@ function BitBuffer:Deserialize()
 			return nil
 		end
 	end
-	if #Data > 255 then
+	if #Data > 254 then
 		warn("BitBuffer: Data set too large to be localized, returning table instead")
 		return Data
 	end
-	return table_unpack(Data)
+	return CalculatedSize, table_unpack(Data)
 end
 
 return BitBuffer

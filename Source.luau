@@ -142,32 +142,6 @@ function BitBuffer:ToString()
 	return string_sub(buffer_tostring(self.Buffer), 1, self.Size)
 end
 
---// RAW READ FUNCTIONS
-
---// Roblox doesnt have readu64.
-function BitBuffer:ReadUINT64(Position: number): (number, number)
-	local Buffer = self.Buffer
-	return (buffer_readu32(Buffer, Position) * (2 ^ 32)) + buffer_readu32(Buffer, Position + 4)
-end
-
---// RAW WRITE FUNCTIONS
-
---// Roblox doesnt have writeu64.
-function BitBuffer:WriteUINT64(Value: number): number
-	local Buffer = self.Buffer
-	local Size = self.Size
-	buffer_writeu32(Buffer, Size, Value // (2 ^ 32))
-	buffer_writeu32(Buffer, Size + 4, Value % (2 ^ 32))
-	return Size
-end
-
-function BitBuffer:WriteNil(): number
-	local Buffer = self.Buffer
-	local Size = self.Size
-	buffer_writeu8(Buffer, Size, Signatures.null)
-	return Size
-end
-
 --// READ FUNCTIONS
 --// Read functions return the extracted value found, and the offset (which is used in the Deserialize function)
 

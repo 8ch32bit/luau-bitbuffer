@@ -453,7 +453,7 @@ function BitBuffer:Serialize(Data: { any })
 	for _, v in ipairs(Data) do
 		local Type = typeof(v)
 		if Signatures[Type] then
-			self[`Write{string.upper(string.sub(Type, 1, 1))}{string.sub(Type, 2, #Type)}`](self, v)
+			self[`Write{string_upper(string_sub(Type, 1, 1))}{string_sub(Type, 2, #Type)}`](self, v)
 		end
 	end
 end
@@ -474,7 +474,7 @@ function BitBuffer:Deserialize()
 		local TypeValue = Type
 		Type = ReverseSignatures[Type]
 		if Type then
-			local Value, Offset = self[`Read{string.upper(string.sub(Type, 1, 1))}{string.sub(Type, 2, #Type)}`](self, Position + 1)
+			local Value, Offset = self[`Read{string_upper(string_sub(Type, 1, 1))}{string_sub(Type, 2, #Type)}`](self, Position + 1)
 			CalculatedSize += Offset + 1
 			Position += Offset
 			table_insert(Data, Value)

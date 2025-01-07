@@ -87,22 +87,22 @@ BitBuffer.__index = BitBuffer
 --// CONSTRUCTORS
 
 function BitBuffer.new(Size: number?)
-	Size = Size or 65536
+	Size = Size or 2048
 	local self = setmetatable({}, BitBuffer)
 	self.Size = 0
 	self.Buffer = buffer_create(Size)
 	return self
 end
 
-function BitBuffer.fromBuffer(Buffer: buffer)
+function BitBuffer.fromBuffer(Buffer: buffer, Size: number?)
 	local self = setmetatable({}, BitBuffer)
 	self.Buffer = Buffer
-	self.Size = buffer_len(Buffer)
+	self.Size = Size or buffer_len(Buffer)
 	return self
 end
 
 function BitBuffer.fromString(String: String)
-	return BitBuffer.fromBuffer(buffer_fromstring(String))
+	return BitBuffer.fromBuffer(buffer_fromstring(String), #String)
 end
 
 --// object functions
@@ -132,6 +132,49 @@ end
 
 function BitBuffer:ToString()
 	return string_sub(buffer_tostring(self.Buffer), 1, self.Size)
+end
+
+--// TODO: Serializes an array of items and adds them in order to the bitbuffer
+function BitBuffer:Serialize(Data: { any })
+	for _, v in ipairs(Data) do
+		local Type = typeof(v)
+		if Signatures[Type] then
+			self[`Write{string_upper(string_sub(Type, 1, 1))}{string_sub(Type, 2, #Type)}`](self, v)
+		end
+	end
+end
+
+--// TODO: Deserializes every value in the bitbuffer and returns them
+function BitBuffer:Deserialize(Function: (number) -> boolean?)
+	local Data = {}
+	local Position = -1
+	local Size = self.Size
+	local Buffer = self.Buffer
+	while Position < Size - 1 do
+		Position += 1
+		if not Function(Position) then
+			return
+		end
+		local Type = buffer_readu8(Buffer, Position)
+		if Type == 0 then
+			continue
+		end
+		local TypeValue = Type
+		Type = ReverseSignatures[Type]
+		if Type then
+			local Value, Offset = self[`Read{string_upper(string_sub(Type, 1, 1))}{string_sub(Type, 2, #Type)}`](self, Position + 1)
+			Position += Offset
+			table_insert(Data, Value)
+		else
+			warn(`BitBuffer:Serialize(): Unknown type '{TypeValue}'! Canceling deserialization...`)
+			return
+		end
+	end
+	if #Data > 255 then
+		warn("BitBuffer: Data set too large to be localized, returning table instead")
+		return Data
+	end
+	return table_unpack(Data)
 end
 
 --// READ FUNCTIONS
@@ -444,50 +487,6 @@ function BitBuffer:WriteUDim2(UDim2: UDim2, ExcludeSignature: boolean?): number
 	buffer_writei32(Buffer, Size + 12, UDim2.Y.Offset)
 	self.Size = Size + 16
 	return Size
-end
-
---// FULL-SCALE SERIALIZE/DESERIALIZE FUNCTIONS
-
---// TODO: Serializes an array of items and adds them in order to the bitbuffer
-function BitBuffer:Serialize(Data: { any })
-	for _, v in ipairs(Data) do
-		local Type = typeof(v)
-		if Signatures[Type] then
-			self[`Write{string_upper(string_sub(Type, 1, 1))}{string_sub(Type, 2, #Type)}`](self, v)
-		end
-	end
-end
-
---// TODO: Deserializes every value in the bitbuffer and returns the calculated size of all items, and the items
-function BitBuffer:Deserialize()
-	local CalculatedSize = 0
-	local Data = {}
-	local Position = -1
-	local Size = self.Size
-	local Buffer = self.Buffer
-	while Position < Size - 1 do
-		Position += 1
-		local Type = buffer_readu8(Buffer, Position)
-		if Type == 0 then
-			continue
-		end
-		local TypeValue = Type
-		Type = ReverseSignatures[Type]
-		if Type then
-			local Value, Offset = self[`Read{string_upper(string_sub(Type, 1, 1))}{string_sub(Type, 2, #Type)}`](self, Position + 1)
-			CalculatedSize += Offset + 1
-			Position += Offset
-			table_insert(Data, Value)
-		else
-			warn(`BitBuffer:Serialize(): Unknown type '{TypeValue}'! Canceling deserialization...`)
-			return nil
-		end
-	end
-	if #Data > 254 then
-		warn("BitBuffer: Data set too large to be localized, returning table instead")
-		return Data
-	end
-	return CalculatedSize, table_unpack(Data)
 end
 
 return BitBuffer

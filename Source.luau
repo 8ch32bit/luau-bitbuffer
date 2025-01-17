@@ -122,10 +122,6 @@ function BitBuffer:GetBuffer()
 	return self.Buffer
 end
 
-function BitBuffer:GetPosition()
-	return self.Position
-end
-
 function BitBuffer:GetSize()
 	return self.Size
 end
@@ -152,8 +148,8 @@ function BitBuffer:Deserialize(Function: (number) -> boolean?)
 	local Buffer = self.Buffer
 	while Position < Size - 1 do
 		Position += 1
-		if not Function(Position) then
-			return
+		if Function and not Function(Position) then
+			break
 		end
 		local Type = buffer_readu8(Buffer, Position)
 		if Type == 0 then

@@ -1,16 +1,43 @@
 --// Author: 8ch99
 --// A basic BitBuffer OOP module that utilizes roblox's buffer objects, supports many built in roblox types
 
+--[[
+
+MIT License
+
+Copyright (c) 2025 8ch99
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+]]
+
 --!native
 --!optimize 2
 
---// Localsss
+--// Dependencies
 
 local buffer_create = buffer.create
 local buffer_fromstring = buffer.fromstring
 local buffer_tostring = buffer.tostring
 local buffer_len = buffer.len
 
+local buffer_readi8 = buffer.readi8
 local buffer_readi16 = buffer.readi16
 local buffer_readi32 = buffer.readi32
 local buffer_writei16 = buffer.writei16
@@ -56,6 +83,7 @@ local Signatures = {
 	Ray = 13,
 	UDim = 14,
 	UDim2 = 15,
+	TweenInfo = 16,
 }
 
 local ReverseSignatures = {
@@ -77,6 +105,7 @@ local ReverseSignatures = {
 	"Ray",
 	"UDim",
 	"UDim2",
+	"TweenInfo",
 }
 
 --// @class BitBuffer
@@ -103,6 +132,12 @@ end
 
 function BitBuffer.fromString(String: String)
 	return BitBuffer.fromBuffer(buffer_fromstring(String), #String)
+end
+
+function BitBuffer.fromDataSet(Data: { any }, Size: number?)
+	local Buffer = BitBuffer.new(Size)
+	Buffer:Serialize(Data)
+	return Buffer
 end
 
 --// object functions
@@ -165,10 +200,6 @@ function BitBuffer:Deserialize(Function: (number) -> boolean?)
 			warn(`BitBuffer:Serialize(): Unknown type '{TypeValue}'! Canceling deserialization...`)
 			return
 		end
-	end
-	if #Data > 255 then
-		warn("BitBuffer: Data set too large to be localized, returning table instead")
-		return Data
 	end
 	return table_unpack(Data)
 end
@@ -276,6 +307,17 @@ function BitBuffer:ReadUDim2(Position: number): (UDim2, number)
 	local YScale = buffer_readf32(Buffer, Position + 8)
 	local YOffset = buffer_readi32(Buffer, Position + 12)
 	return UDim2.new(XScale, XOffset, YScale, YOffset), 16
+end
+
+function BitBuffer:ReadTweenInfo(Position: number): (UDim2, number)
+	local Buffer = self.Buffer
+	local Time = buffer_readf64(Buffer, Position)
+	local EasingStyle = buffer_readi8(Buffer, Position + 8)
+	local EasingDirection = buffer_readi8(Buffer, Position + 9)
+	local RepeatCount = buffer_readf64(Buffer, Position + 10)
+	local Reverses = buffer_readi8(Buffer, Position + 18)
+	local DelayTime = buffer_readf64(Buffer, Position + 19)
+	return TweenInfo.new(Time, Enum.EasingStyle:FromValue(EasingStyle), Enum.EasingDirection:FromValue(EasingDirection), RepeatCount, Reverses, DelayTime), 27
 end
 
 --// WRITE FUNCTIONS
@@ -482,6 +524,23 @@ function BitBuffer:WriteUDim2(UDim2: UDim2, ExcludeSignature: boolean?): number
 	buffer_writef32(Buffer, Size + 8, UDim2.Y.Scale)
 	buffer_writei32(Buffer, Size + 12, UDim2.Y.Offset)
 	self.Size = Size + 16
+	return Size
+end
+
+function BitBuffer:WriteTweenInfo(TweenInfo: TweenInfo, ExcludeSignature: boolean?): number
+	local Buffer = self.Buffer
+	local Size = self.Size
+	if not ExcludeSignature then
+		buffer_writeu8(Buffer, Size, Signatures.TweenInfo)
+		Size += 1
+	end
+	buffer_writef64(Buffer, Size, TweenInfo.Time)
+	buffer_writeu8(Buffer, Size + 8, TweenInfo.EasingStyle.Value)
+	buffer_writeu8(Buffer, Size + 9, TweenInfo.EasingDirection.Value)
+	buffer_writef64(Buffer, Size + 10, TweenInfo.RepeatCount)
+	buffer_writeu8(Buffer, Size + 18, TweenInfo.Reverses)
+	buffer_writef64(Buffer, Size + 19, TweenInfo.DelayTime)
+	self.Size = Size + 27
 	return Size
 end
 

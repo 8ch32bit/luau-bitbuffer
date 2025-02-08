@@ -1,5 +1,6 @@
 --// Author: 8ch99
 --// A basic BitBuffer OOP module that utilizes roblox's buffer objects, supports many built in roblox types
+--// Disclaimer: This is technically a byte-buffer, but once roblox adds support for the new buffer functions ill convert more things
 
 --[[
 
@@ -33,6 +34,7 @@ SOFTWARE.
 --// Dependencies
 
 local buffer_create = buffer.create
+local buffer_copy = buffer.copy
 local buffer_fromstring = buffer.fromstring
 local buffer_tostring = buffer.tostring
 local buffer_len = buffer.len
@@ -142,15 +144,16 @@ end
 
 --// object functions
 
-function BitBuffer:Clone()
-	local Clone = BitBuffer.new()
-	Clone:WriteString(self:ToString())
-	return Clone
-end
-
 function BitBuffer:Destroy()
 	table_clear(self)
 	setmetatable(self, nil)
+end
+
+function BitBuffer:Clone()
+	local Size = self.Size
+	local Buffer = buffer_create(Size)
+	buffer_copy(Buffer, 0, self.Buffer)
+	return BitBuffer.fromBuffer(Buffer, Size)
 end
 
 function BitBuffer:GetBuffer()
@@ -176,7 +179,7 @@ function BitBuffer:Serialize(Data: { any })
 end
 
 --// TODO: Deserializes every value in the bitbuffer and returns them
-function BitBuffer:Deserialize(Function: (number) -> boolean?)
+function BitBuffer:Deserialize(NoUnpack: boolean?, Function: (number) -> boolean?)
 	local Data = {}
 	local Position = -1
 	local Size = self.Size
@@ -200,6 +203,9 @@ function BitBuffer:Deserialize(Function: (number) -> boolean?)
 			warn(`BitBuffer:Serialize(): Unknown type '{TypeValue}'! Canceling deserialization...`)
 			return
 		end
+	end
+	if NoUnpack == true then
+		return Data
 	end
 	return table_unpack(Data)
 end
@@ -312,12 +318,12 @@ end
 function BitBuffer:ReadTweenInfo(Position: number): (UDim2, number)
 	local Buffer = self.Buffer
 	local Time = buffer_readf64(Buffer, Position)
-	local EasingStyle = buffer_readi8(Buffer, Position + 8)
-	local EasingDirection = buffer_readi8(Buffer, Position + 9)
+	local EasingStyle = buffer_readu8(Buffer, Position + 8)
+	local EasingDirection = buffer_readu8(Buffer, Position + 9)
 	local RepeatCount = buffer_readf64(Buffer, Position + 10)
-	local Reverses = buffer_readi8(Buffer, Position + 18)
+	local Reverses = buffer_readu8(Buffer, Position + 18)
 	local DelayTime = buffer_readf64(Buffer, Position + 19)
-	return TweenInfo.new(Time, Enum.EasingStyle:FromValue(EasingStyle), Enum.EasingDirection:FromValue(EasingDirection), RepeatCount, Reverses, DelayTime), 27
+	return TweenInfo.new(Time, Enum.EasingStyle:FromValue(EasingStyle), Enum.EasingDirection:FromValue(EasingDirection), RepeatCount, Reverses ~= 0, DelayTime), 27
 end
 
 --// WRITE FUNCTIONS
@@ -538,7 +544,7 @@ function BitBuffer:WriteTweenInfo(TweenInfo: TweenInfo, ExcludeSignature: boolea
 	buffer_writeu8(Buffer, Size + 8, TweenInfo.EasingStyle.Value)
 	buffer_writeu8(Buffer, Size + 9, TweenInfo.EasingDirection.Value)
 	buffer_writef64(Buffer, Size + 10, TweenInfo.RepeatCount)
-	buffer_writeu8(Buffer, Size + 18, TweenInfo.Reverses)
+	buffer_writeu8(Buffer, Size + 18, (TweenInfo.Reverses and 1) or 0)
 	buffer_writef64(Buffer, Size + 19, TweenInfo.DelayTime)
 	self.Size = Size + 27
 	return Size

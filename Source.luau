@@ -105,8 +105,6 @@ function Bitsets.ReadInt8(Buffer: buffer, BitOffset: number)
 	
 	buffer_writebits(IntBuffer, 0, 8, buffer_readbits(Buffer, BitOffset, 8))
 	
-	IntBuffer = nil
-	
 	return buffer_readi8(IntBuffer, 0)
 end
 
@@ -118,8 +116,6 @@ function Bitsets.ReadInt16(Buffer: buffer, BitOffset: number)
 	local IntBuffer = buffer_create(2)
 	
 	buffer_writebits(IntBuffer, 0, 16, buffer_readbits(Buffer, BitOffset, 16))
-	
-	IntBuffer = nil
 	
 	return buffer_readi16(IntBuffer, 0)
 end
@@ -133,8 +129,6 @@ function Bitsets.ReadInt32(Buffer: buffer, BitOffset: number)
 	
 	buffer_writebits(IntBuffer, 0, 32, buffer_readbits(Buffer, BitOffset, 32))
 	
-	IntBuffer = nil
-	
 	return buffer_readi32(IntBuffer, 0)
 end
 
@@ -146,8 +140,6 @@ function Bitsets.ReadFloat(Buffer: buffer, BitOffset: number)
 	local FloatBuffer = buffer_create(4)
 	
 	buffer_writebits(FloatBuffer, 0, 32, buffer_readbits(Buffer, BitOffset, 32))
-	
-	FloatBuffer = nil
 	
 	return buffer_readf32(FloatBuffer, 0)
 end
@@ -161,8 +153,6 @@ function Bitsets.ReadDouble(Buffer: buffer, BitOffset: number)
 	
 	buffer_writebits(FloatBuffer, 0, 32, buffer_readbits(Buffer, BitOffset, 32))
 	buffer_writebits(FloatBuffer, 32, 32, buffer_readbits(Buffer, BitOffset + 32, 32))
-	
-	FloatBuffer = nil
 	
 	return buffer_readf64(FloatBuffer, 0)
 end
@@ -318,6 +308,42 @@ local ReverseSignatures = {
 	[0] = "null",
 	--// supported standard lua/luau types
 	"string",
+	"number",
+	"boolean",
+	"vector",
+	--// supported luau types
+	"Color3",
+	"Vector2",
+	"Vector2int16",
+	--// no Vector3, because "vector" is redundant to Vector3
+	"Vector3int16",
+	"CFrame",
+	"Region3",
+	"Region3int16",
+	"BrickColor",
+	"Ray",
+	"UDim",
+	"UDim2",
+	"TweenInfo",
+	"Axes",
+}
+
+local Sizes = {
+	--// If a size is nil, it means it varies
+	
+	null = 0,
+	string = nil, 
+	number = 64,
+	boolean = 1,
+	vector = 192,
+	Color3 = 192,
+	Vector2 = 128,
+	Vector2int16 = 32,
+	Vector3int16 = 48,
+	CFrame = 192,
+	Region3 = 384,
+	Region3int16 = 96,
+	BrickColor = 10,
 	"number",
 	"boolean",
 	"vector",

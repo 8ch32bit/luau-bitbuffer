@@ -105,6 +105,8 @@ function Bitsets.ReadInt8(Buffer: buffer, BitOffset: number)
 	
 	buffer_writebits(IntBuffer, 0, 8, buffer_readbits(Buffer, BitOffset, 8))
 	
+	IntBuffer = nil
+	
 	return buffer_readi8(IntBuffer, 0)
 end
 
@@ -116,6 +118,8 @@ function Bitsets.ReadInt16(Buffer: buffer, BitOffset: number)
 	local IntBuffer = buffer_create(2)
 	
 	buffer_writebits(IntBuffer, 0, 16, buffer_readbits(Buffer, BitOffset, 16))
+	
+	IntBuffer = nil
 	
 	return buffer_readi16(IntBuffer, 0)
 end
@@ -129,6 +133,8 @@ function Bitsets.ReadInt32(Buffer: buffer, BitOffset: number)
 	
 	buffer_writebits(IntBuffer, 0, 32, buffer_readbits(Buffer, BitOffset, 32))
 	
+	IntBuffer = nil
+	
 	return buffer_readi32(IntBuffer, 0)
 end
 
@@ -140,6 +146,8 @@ function Bitsets.ReadFloat(Buffer: buffer, BitOffset: number)
 	local FloatBuffer = buffer_create(4)
 	
 	buffer_writebits(FloatBuffer, 0, 32, buffer_readbits(Buffer, BitOffset, 32))
+	
+	FloatBuffer = nil
 	
 	return buffer_readf32(FloatBuffer, 0)
 end
@@ -153,6 +161,8 @@ function Bitsets.ReadDouble(Buffer: buffer, BitOffset: number)
 	
 	buffer_writebits(FloatBuffer, 0, 32, buffer_readbits(Buffer, BitOffset, 32))
 	buffer_writebits(FloatBuffer, 32, 32, buffer_readbits(Buffer, BitOffset + 32, 32))
+	
+	FloatBuffer = nil
 	
 	return buffer_readf64(FloatBuffer, 0)
 end
@@ -213,6 +223,8 @@ function Bitsets.WriteInt8(Buffer: buffer, BitOffset: number, Value: number)
 	buffer_writei8(IntBuffer, 0, Value)
 	buffer_writebits(Buffer, BitOffset, 8, buffer_readbits(IntBuffer, 0, 8))
 	
+	IntBuffer = nil
+	
 	return BitOffset
 end
 
@@ -226,6 +238,8 @@ function Bitsets.WriteInt16(Buffer: buffer, BitOffset: number, Value: number)
 	
 	buffer_writei16(IntBuffer, 0, Value)
 	buffer_writebits(Buffer, BitOffset, 16, buffer_readbits(IntBuffer, 0, 16))
+	
+	IntBuffer = nil
 	
 	return BitOffset
 end
@@ -241,6 +255,8 @@ function Bitsets.WriteInt32(Buffer: buffer, BitOffset: number, Value: number)
 	buffer_writei16(IntBuffer, 0, Value)
 	buffer_writebits(Buffer, BitOffset, 32, buffer_readbits(IntBuffer, 0, 32))
 	
+	IntBuffer = nil
+	
 	return BitOffset
 end
 
@@ -254,6 +270,8 @@ function Bitsets.WriteFloat(Buffer: buffer, BitOffset: number, Value: number)
 	
 	buffer_writef32(FloatBuffer, 0, Value)
 	buffer_writebits(Buffer, BitOffset, 32, buffer_readbits(FloatBuffer, 0, 32))
+	
+	FloatBuffer = nil
 	
 	return BitOffset
 end
@@ -270,6 +288,8 @@ function Bitsets.WriteDouble(Buffer: buffer, BitOffset: number, Value: number)
 	buffer_writebits(Buffer, BitOffset, 32, buffer_readbits(FloatBuffer, 0, 32))
 	buffer_writebits(Buffer, BitOffset + 32, 32, buffer_readbits(FloatBuffer, 32, 32))
 	
+	FloatBuffer = nil
+	
 	return BitOffset
 end
 
@@ -283,11 +303,6 @@ function Bitsets.WriteString(Buffer: buffer, BitOffset: number, Value: string)
 
 	if BitOffset % 8 == 0 then --// Should hopefully save a bit of performance
 		buffer_writestring(Buffer, BitOffset // 8, Value, Length)
-		return BitOffset, Length * 8
-	end
-
-	if Length == 1 then
-		buffer_writebits(Buffer, BitOffset, 8, string_byte(Value))
 		return BitOffset, Length * 8
 	end
 
